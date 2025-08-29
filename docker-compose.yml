@@ -1,0 +1,62 @@
+# Please refer https://aka.ms/HTTPSinContainer on how to setup an https developer certificate for your ASP.NET Core service.
+
+version: '3.8'
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+services:
+  videouploaderapi:
+    image: videouploaderapi
+    depends_on:
+      - rabbitmq_
+    build:
+      context: .
+      dockerfile: ./VideoUploader.API/Dockerfile
+    ports:
+      - 8080:8080    
+    networks:
+      - monitoring
+  videouploaderconsumer:
+    image: videouploaderconsumer
+    depends_on:
+      - rabbitmq_
+    build:
+      context: .
+      dockerfile: ./VideoUploader.Consumer/Dockerfile
+    ports:
+      - 8081:8081
+    networks:
+      - monitoring
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    restart: always
+    expose:
+      - 15672
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+    networks:
+      - monitoring
+  sqlserver_:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    restart: always
+    container_name: sqlserver_
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: sqlRRC00!
+    networks:
+      - monitoring
+    ports:
+      - 11433:11433
