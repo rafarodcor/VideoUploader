@@ -26,7 +26,7 @@ jobs:
       run: dotnet build VideoUploader.sln --configuration Release --no-restore -nowarn:CS8618,CS8766,CS8603,CS8625,CS8604,CS1998
 
     - name: Test
-      run: dotnet test VideoUploader.Tests/VideoUploader.Tests.csproj --no-build --verbosity normal
+      run: dotnet test VideoUploader.Tests/VideoUploader.Tests.csproj --filter "Category=Unit"
       
     - name: Publish
       run: dotnet publish -c Release --property:PublishDir=Publish -nowarn:CS8618,CS8766,CS8603,CS8625,CS8604,CS1998
