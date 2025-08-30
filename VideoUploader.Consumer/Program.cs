@@ -1,3 +1,5 @@
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using VideoUploader.Consumer.MessageBus;
 using VideoUploader.Consumer.Services;
 using VideoUploader.Data.Database;
@@ -5,6 +7,22 @@ using VideoUploader.Data.Repositories;
 using VideoUploader.Models.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+#region Health Checks
+
+var rabbitMqConnectionString = $"amqp://{builder.Configuration["RabbitMQConnection:Username"]}:{builder.Configuration["RabbitMQConnection:Password"]}@{builder.Configuration["RabbitMQConnection:Host"]}";
+
+builder.Services.AddHealthChecks()
+    .AddSqlServer(
+        connectionString: builder.Configuration.GetConnectionString("DefaultConnection"),
+        name: "Database",
+        tags: ["core", "database"])
+    .AddRabbitMQ(
+        rabbitConnectionString: rabbitMqConnectionString,
+        name: "RabbitMQ",
+        tags: ["core", "message-bus"]);
+
+#endregion
 
 #region Dependency Injection
 
@@ -47,5 +65,11 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
 
 app.Run();

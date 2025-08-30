@@ -134,10 +134,7 @@ public class UploadVideoAnalysisConsumer : BackgroundService
                     // 6. Confirma a mensagem (ACK) em TODOS os casos (sucesso ou falha tratada)                    
                     _channel.BasicAck(eventArgs.DeliveryTag, false);
                 }
-            }
-
-            // 7. Confirma que a mensagem foi processada e pode ser removida da fila.
-            _channel.BasicAck(eventArgs.DeliveryTag, false);
+            }                        
         };
 
         _channel.BasicConsume(QUEUE_NAME, false, consumer);
