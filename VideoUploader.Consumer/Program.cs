@@ -2,14 +2,19 @@ using VideoUploader.Consumer.MessageBus;
 using VideoUploader.Consumer.Services;
 using VideoUploader.Data.Database;
 using VideoUploader.Data.Repositories;
+using VideoUploader.Models.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 #region Dependency Injection
 
 // Add services to the container.
+
 // Context
 builder.Services.AddDbContext<VideoUploaderContext>();
+
+// Configuration
+builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorageSettings"));
 
 //Services
 builder.Services.AddTransient<IQrCodeVideoAnalysis, QrCodeVideoAnalysis>();

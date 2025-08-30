@@ -7,16 +7,14 @@ networks:
     driver: bridge
 
 volumes:
-  prometheus-data:
+  video-files:
     driver: local
-  grafana-data:
-    driver: local
-
+    
 services:
   videouploaderapi:
     image: videouploaderapi
     depends_on:
-      - rabbitmq_
+      - rabbitmq
     build:
       context: .
       dockerfile: ./VideoUploader.API/Dockerfile
@@ -24,10 +22,12 @@ services:
       - 8080:8080    
     networks:
       - monitoring
+    volumes:
+      - video-files:/app/Files
   videouploaderconsumer:
     image: videouploaderconsumer
     depends_on:
-      - rabbitmq_
+      - rabbitmq
     build:
       context: .
       dockerfile: ./VideoUploader.Consumer/Dockerfile
@@ -35,6 +35,8 @@ services:
       - 8081:8081
     networks:
       - monitoring
+    volumes:
+      - video-files:/app/Files
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: rabbitmq
@@ -49,10 +51,10 @@ services:
       - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
     networks:
       - monitoring
-  sqlserver_:
+  sqlserver:
     image: mcr.microsoft.com/mssql/server:2019-latest
     restart: always
-    container_name: sqlserver_
+    container_name: sqlserver
     environment:
       ACCEPT_EULA: Y
       SA_PASSWORD: sqlRRC00!

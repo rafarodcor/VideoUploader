@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using VideoUploader.API.DTOs;
 using VideoUploader.Models.Helpers;
 using VideoUploader.Models.Models;
@@ -10,21 +11,23 @@ namespace VideoUploader.API.Controllers;
 [Route("v1/[controller]")]
 public class VideoController(
     ILogger<VideoController> logger,
-    IVideoAnalysisService videoAnalysisService) : ControllerBase
+    IVideoAnalysisService videoAnalysisService,
+    IOptions<FileStorageSettings> fileStorageSettings) : ControllerBase
 {
     #region Constants
 
     private static readonly List<string> ALLOWED_EXTENSIONS = [".mp4", ".avi", ".mkv"];
 
     #endregion
-
     #region Constructors
+
     #endregion
 
     #region Properties
 
     private readonly ILogger<VideoController> _logger = logger;
     private readonly IVideoAnalysisService _videoAnalysisService = videoAnalysisService;
+    private readonly FileStorageSettings _fileStorageSettings = fileStorageSettings.Value;
 
     #endregion
 
@@ -45,10 +48,9 @@ public class VideoController(
 
         foreach (var videoFile in videoFiles)
         {
-            var extension = Path.GetExtension(videoFile.FileName).ToLowerInvariant();
-            if (string.IsNullOrEmpty(extension) || !ALLOWED_EXTENSIONS.Contains(extension))
+            if (!IsFileExtensionValid(videoFile))
             {
-                return BadRequest("Formato de arquivo inválido. Apenas .mp4, .avi e .mkv são permitidos.");
+                return BadRequest($"Formato de arquivo inválido para '{videoFile.FileName}'. Apenas .mp4, .avi e .mkv são permitidos.");
             }
 
             // 2. Criar a entidade de análise
@@ -56,14 +58,18 @@ public class VideoController(
             {
                 Id = Guid.NewGuid(),
                 OriginalFileName = videoFile.FileName,
+                Extension = Path.GetExtension(videoFile.FileName).ToLowerInvariant(),
                 Status = Enums.ProcessingStatus.InQueue,
-                SubmittedAt = DateTime.UtcNow
+                SubmittedAt = DateTime.Now
             };
 
             // 3. Salvar o arquivo em um local temporário/persistente
-            var videoPath = Path.Combine("Files", $"{analysis.Id}{extension}");
+            var videoPath = Path.Combine(_fileStorageSettings.VideoPath, $"{analysis.Id}{analysis.Extension}");
+
             try
             {
+                Directory.CreateDirectory(_fileStorageSettings.VideoPath);
+
                 await using (var stream = new FileStream(videoPath, FileMode.Create))
                 {
                     await videoFile.CopyToAsync(stream);
@@ -89,16 +95,12 @@ public class VideoController(
             }
 
             // 5. Publicar a mensagem na fila para processamento assíncrono        
-            await _videoAnalysisService.UploadVideoAsync(new InformationFile { Id = analysis.Id, FileName = analysis.OriginalFileName, Path = videoPath });
+            await _videoAnalysisService.UploadVideoAsync(new InformationFile(analysis.Id, analysis.OriginalFileName, videoPath));
 
             _logger.LogInformation($"Análise {analysis.Id} enfileirada para processamento.");
 
             // 6. Retornar a resposta para o cliente
-            responses.Add(new UploadResponse
-            {
-                AnalysisId = analysis.Id,
-                Message = "Vídeo recebido e enfileirado para análise."
-            });
+            responses.Add(new UploadResponse(analysis.Id, "Vídeo recebido e enfileirado para análise."));
         }
 
         // 7. Retorna 202 Accepted
@@ -128,7 +130,8 @@ public class VideoController(
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogError(ex, $"Erro ao buscar status para a análise ID {id}");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Ocorreu um erro inesperado ao consultar os dados de QR Code.");
         }
     }
 
@@ -152,17 +155,24 @@ public class VideoController(
             }
             else
             {
-                return Ok(listQrCodeData.Select(qr => new QrCodeResponse
-                {
-                    Timestamp = qr.Timestamp,
-                    Content = qr.Content
-                }).ToList());
+                return Ok(listQrCodeData.Select(qr => new QrCodeResponse(qr.Timestamp, qr.Content)).ToList());                
             }
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogError(ex, $"Erro ao buscar dados de QR Code para a análise ID {id}");
+            return StatusCode(StatusCodes.Status500InternalServerError, "Ocorreu um erro inesperado ao consultar os dados de QR Code.");
         }
+    }
+
+    private bool IsFileExtensionValid(IFormFile file)
+    {
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (string.IsNullOrEmpty(extension) || !ALLOWED_EXTENSIONS.Contains(extension))
+        {
+            return false;
+        }
+        return true;
     }
 
     #endregion

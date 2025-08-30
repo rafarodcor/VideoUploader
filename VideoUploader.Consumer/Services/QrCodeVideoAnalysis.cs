@@ -1,12 +1,23 @@
 ﻿using FFMpegCore;
+using Microsoft.Extensions.Options;
 using System.Drawing;
+using VideoUploader.Models.Models;
 using ZXing.Windows.Compatibility;
 
 namespace VideoUploader.Consumer.Services;
 
-public class QrCodeVideoAnalysis() : IQrCodeVideoAnalysis
+public class QrCodeVideoAnalysis(
+    ILogger<QrCodeVideoAnalysis> logger,
+    IOptions<FileStorageSettings> fileStorageSettings) : IQrCodeVideoAnalysis
 {
     #region Properties
+
+    private readonly ILogger<QrCodeVideoAnalysis> _logger = logger;
+    private readonly FileStorageSettings _fileStorageSettings = fileStorageSettings.Value;
+
+    #endregion
+
+    #region Constructors
     #endregion
 
     #region Methods
@@ -19,19 +30,22 @@ public class QrCodeVideoAnalysis() : IQrCodeVideoAnalysis
         var mediaInfo = await FFProbe.AnalyseAsync(videoPath);
         var duration = mediaInfo.Duration;
 
+        var reader = new BarcodeReader();
+
+        Directory.CreateDirectory(_fileStorageSettings.VideoPath);
+
         // Passo 2: Iterar pelo vídeo, extraindo um frame por segundo
         for (double seconds = 0; seconds < duration.TotalSeconds; seconds++)
         {
             var currentTime = TimeSpan.FromSeconds(seconds);
-            var tempImagePath = Path.Combine("Files", $"frame_{seconds}.png");
+            var tempImagePath = Path.Combine(_fileStorageSettings.VideoPath, $"frame_{Guid.NewGuid()}.png");
 
             try
             {
-                // Usa FFMpegCore para extrair o frame atual como uma imagem
+                // Passo 3: Usa FFMpegCore para extrair o frame atual como uma imagem
                 FFMpeg.Snapshot(videoPath, tempImagePath, new Size(640, 480), currentTime);
 
-                // Passo 3: Tenta ler a imagem com ZXing.Net
-                var reader = new BarcodeReader();
+                // Passo 4: Tenta ler a imagem com ZXing.Net                
                 using var bitmap = (Bitmap)Image.FromFile(tempImagePath);
                 var result = reader.Decode(bitmap);
                 if (result != null)
@@ -40,9 +54,9 @@ public class QrCodeVideoAnalysis() : IQrCodeVideoAnalysis
                     listTimestamps.Add((currentTime, result.Text));
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                _logger.LogWarning(ex, "Falha ao processar o frame no timestamp {Timestamp} do vídeo {VideoPath}. Continuando a análise.", currentTime, videoPath);
             }
             finally
             {
@@ -57,11 +71,11 @@ public class QrCodeVideoAnalysis() : IQrCodeVideoAnalysis
         return listTimestamps;
     }
 
-    public async Task SaveImageFrameVideo()
-    {
-        // Salva um frame do vídeo no tempo 00:01:30
-        FFMpeg.Snapshot("caminho/para/seu_video.mp4", "caminho/para/thumbnail.png", new Size(640, 360), TimeSpan.FromMinutes(1.5));
-    }
+    //public async Task SaveImageFrameVideo()
+    //{
+    //    // Salva um frame do vídeo no tempo 00:01:30
+    //    FFMpeg.Snapshot("caminho/para/seu_video.mp4", "caminho/para/thumbnail.png", new Size(640, 360), TimeSpan.FromMinutes(1.5));
+    //}
 
     #endregion
 }

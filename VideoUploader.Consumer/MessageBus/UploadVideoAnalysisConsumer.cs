@@ -1,5 +1,4 @@
-﻿using FFMpegCore;
-using RabbitMQ.Client;
+﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 using System.Text.Json;
@@ -48,93 +47,100 @@ public class UploadVideoAnalysisConsumer : BackgroundService
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation($"Consumer > ExecuteAsync > {QUEUE_NAME} > ExecuteAsync");
-
         var consumer = new EventingBasicConsumer(_channel);
+
         consumer.Received += async (sender, eventArgs) =>
         {
-            var modelBytes = eventArgs.Body.ToArray();
-            var modelJson = Encoding.UTF8.GetString(modelBytes);
-            var informationFile = JsonSerializer.Deserialize<InformationFile>(modelJson);
+            var body = eventArgs.Body.ToArray();
+            var messageJson = Encoding.UTF8.GetString(body);
+            var informationFile = JsonSerializer.Deserialize<InformationFile>(messageJson);
 
-            await PostAsync(informationFile!);
+            if (informationFile == null)
+            {
+                _logger.LogWarning("Mensagem recebida inválida ou vazia.");
+                _channel.BasicAck(eventArgs.DeliveryTag, false);
+                return;
+            }
 
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var videoPath = informationFile.Path;
+
+                _logger.LogInformation("Iniciando processamento para a análise: {AnalysisId}", informationFile.Id);
+
+                var videoRepository = scope.ServiceProvider.GetRequiredService<IVideoAnalysisRepository>();
+                var qrCodeAnalysisService = scope.ServiceProvider.GetRequiredService<IQrCodeVideoAnalysis>();
+
+                VideoAnalysis? videoAnalysis = null;
+
+                try
+                {
+                    videoAnalysis = await videoRepository.GetAnalysisStatus(informationFile.Id);
+
+                    if (videoAnalysis == null)
+                    {
+                        _logger.LogError("Análise de vídeo com ID {AnalysisId} não encontrada no banco de dados.", informationFile.Id);
+                        _channel.BasicAck(eventArgs.DeliveryTag, false); // Remove a mensagem "morta"
+                        return;
+                    }
+
+                    // 1. Atualiza o status para "Processando"
+                    videoAnalysis.Status = Enums.ProcessingStatus.Processing;
+                    await videoRepository.UpdateAnalysisStatus(videoAnalysis);
+
+                    // 2. Faz a análise do vídeo
+                    var listTimestamps = await qrCodeAnalysisService.FindQrCodeInVideoAsync(videoPath);
+
+                    // 3. Salva os resultados
+                    if (listTimestamps.Count > 0)
+                    {
+                        var listQrCodeData = listTimestamps.Select(t => new QrCodeData
+                        {
+                            VideoAnalysisId = informationFile.Id,
+                            Timestamp = t.Timestamp.Value, // Assumindo que não será nulo se encontrado
+                            Content = t.QrCodeContent
+                        }).ToList();
+
+                        await videoRepository.SaveListQrCodeData(listQrCodeData);
+                    }
+
+                    // 4. Atualiza o status para "Concluído"
+                    videoAnalysis.Status = Enums.ProcessingStatus.Completed;
+                    await videoRepository.UpdateAnalysisStatus(videoAnalysis);
+
+                    _logger.LogInformation("Processamento concluído com sucesso para a análise: {AnalysisId}", informationFile.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Falha crítica ao processar a análise: {AnalysisId}", informationFile.Id);
+
+                    if (videoAnalysis != null)
+                    {
+                        // 5. Atualiza o status para "Falhou"
+                        videoAnalysis.Status = Enums.ProcessingStatus.Failed;
+                        await videoRepository.UpdateAnalysisStatus(videoAnalysis);
+                    }
+                }
+                finally
+                {
+                    // Limpeza do arquivo físico
+                    if (File.Exists(videoPath))
+                    {
+                        File.Delete(videoPath);
+                    }
+
+                    // 6. Confirma a mensagem (ACK) em TODOS os casos (sucesso ou falha tratada)                    
+                    _channel.BasicAck(eventArgs.DeliveryTag, false);
+                }
+            }
+
+            // 7. Confirma que a mensagem foi processada e pode ser removida da fila.
             _channel.BasicAck(eventArgs.DeliveryTag, false);
         };
 
         _channel.BasicConsume(QUEUE_NAME, false, consumer);
         return Task.CompletedTask;
     }
-
-    public async Task PostAsync(InformationFile informationFile)
-    {
-        _logger.LogInformation($"Consumer > ExecuteAsync > {QUEUE_NAME} > PostAsync");
-
-        var videoPath = $@"..\VideoUploader.API\{informationFile.Path}";
-
-        try
-        {
-            if (informationFile != null)
-            {
-                using var scope = _serviceProvider.CreateScope();
-                var videoRepository = scope.ServiceProvider.GetRequiredService<IVideoAnalysisRepository>();
-
-                //Recupera o vídeo pelo Id pra atualizar o status
-                var videoAnalysis = await videoRepository.GetAnalysisStatus(informationFile.Id);
-
-                if (videoAnalysis != null)
-                {
-                    videoAnalysis.Status = Enums.ProcessingStatus.Processing;
-                    videoAnalysis.SubmittedAt = DateTime.UtcNow;
-                    await videoRepository.UpdateAnalysisStatus(videoAnalysis);                                        
-                                        
-                    //Manipula o vídeo para encontrar os qrCodes                    
-                    var listTimestamps = await _qrCodeVideoAnalysis.FindQrCodeInVideoAsync(videoPath);
-
-                    _logger.LogInformation($"Consumer > ExecuteAsync > {QUEUE_NAME} > FindQrCodeInVideoAsync");
-
-                    if (listTimestamps.Count != 0)
-                    {
-                        List<QrCodeData> listQrCodeData = [];
-
-                        foreach (var (Timestamp, QrCodeContent) in listTimestamps)
-                        {
-                            listQrCodeData.Add(new QrCodeData
-                            {
-                                VideoAnalysisId = informationFile.Id,
-                                Timestamp = (TimeSpan)Timestamp,
-                                Content = QrCodeContent
-                            });
-                        }
-
-                        await videoRepository.SaveListQrCodeData(listQrCodeData);
-
-                        _logger.LogInformation($"Consumer > ExecuteAsync > {QUEUE_NAME} > SaveListQrCodeData");
-                    }                    
-                    
-                    videoAnalysis.Status = Enums.ProcessingStatus.Completed;
-                    videoAnalysis.SubmittedAt = DateTime.UtcNow;
-                    await videoRepository.UpdateAnalysisStatus(videoAnalysis);
-
-                    _logger.LogInformation($"Consumer > ExecuteAsync > {QUEUE_NAME} > UpdateAnalysisStatus");
-                }                
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Ocorreu um erro ao processar o vídeo: {Path}", videoPath);
-            throw;
-        }
-        finally
-        {
-            // Limpeza: garante que o arquivo temporário seja deletado
-            if (File.Exists(videoPath))
-            {
-                _logger.LogInformation("Deletando arquivo temporário: {Path}", videoPath);
-                File.Delete(videoPath);
-            }
-        }
-    }    
 
     #endregion
 }

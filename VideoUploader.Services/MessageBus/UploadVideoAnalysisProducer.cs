@@ -25,22 +25,6 @@ public class UploadVideoAnalysisProducer(IMessageBus messageBus, ILogger<UploadV
 
     #region Methods
 
-    public void Publish(Guid id, IFormFile videoFile)
-    {
-        _logger.LogInformation($"Producer > Publish > {QUEUE_NAME}");
-
-        object videoFileData = new
-        {
-            Id = id,
-            VideoFile = videoFile
-        };
-
-        var message = System.Text.Json.JsonSerializer.Serialize(videoFileData);
-        var body = Encoding.UTF8.GetBytes(message);
-
-        _messageBus.Publish(QUEUE_NAME, body);
-    }  
-
     public void Publish(InformationFile informationFile)
     {
         _logger.LogInformation($"Producer > Publish > {QUEUE_NAME}");
