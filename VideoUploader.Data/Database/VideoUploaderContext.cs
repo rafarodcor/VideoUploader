@@ -42,8 +42,9 @@ public class VideoUploaderContext : DbContext
         {
             video.Property(c => c.Id).IsRequired().ValueGeneratedOnAdd();
             video.Property(c => c.OriginalFileName).IsRequired().HasMaxLength(255);
+            video.Property(c => c.Extension).IsRequired().HasMaxLength(10);
             video.Property(c => c.Status).IsRequired();
-            video.Property(c => c.SubmittedAt).IsRequired().HasDefaultValueSql("GETUTCDATE()");
+            video.Property(c => c.SubmittedAt).IsRequired().HasDefaultValueSql("GETDATE()");
         });
 
         modelBuilder.Entity<QrCodeData>(qrCode =>

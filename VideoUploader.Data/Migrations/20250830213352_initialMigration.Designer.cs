@@ -12,8 +12,8 @@ using VideoUploader.Data.Database;
 namespace VideoUploader.Data.Migrations
 {
     [DbContext(typeof(VideoUploaderContext))]
-    [Migration("20250828012945_InitialMigration")]
-    partial class InitialMigration
+    [Migration("20250830213352_initialMigration")]
+    partial class initialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -51,6 +51,11 @@ namespace VideoUploader.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Extension")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
                     b.Property<string>("OriginalFileName")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -62,7 +67,7 @@ namespace VideoUploader.Data.Migrations
                     b.Property<DateTime>("SubmittedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasDefaultValueSql("GETDATE()");
 
                     b.HasKey("Id");
 
