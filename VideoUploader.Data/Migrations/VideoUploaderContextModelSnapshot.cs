@@ -31,6 +31,9 @@ namespace VideoUploader.Data.Migrations
                     b.Property<string>("Content")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("DurationInSeconds")
+                        .HasColumnType("int");
+
                     b.Property<TimeSpan>("Timestamp")
                         .HasColumnType("time");
 

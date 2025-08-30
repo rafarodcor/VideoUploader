@@ -1,4 +1,4 @@
-﻿namespace VideoUploader.Models.Models;
+﻿namespace VideoUploader.Models.DTOs;
 
 /// <summary>
 /// Guarda informações do arquivo de vídeo para análise.

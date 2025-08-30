@@ -12,7 +12,7 @@ using VideoUploader.Data.Database;
 namespace VideoUploader.Data.Migrations
 {
     [DbContext(typeof(VideoUploaderContext))]
-    [Migration("20250830213352_initialMigration")]
+    [Migration("20250830220451_initialMigration")]
     partial class initialMigration
     {
         /// <inheritdoc />
@@ -33,6 +33,9 @@ namespace VideoUploader.Data.Migrations
 
                     b.Property<string>("Content")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DurationInSeconds")
+                        .HasColumnType("int");
 
                     b.Property<TimeSpan>("Timestamp")
                         .HasColumnType("time");

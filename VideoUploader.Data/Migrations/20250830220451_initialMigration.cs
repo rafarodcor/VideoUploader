@@ -18,7 +18,8 @@ namespace VideoUploader.Data.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     VideoAnalysisId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Timestamp = table.Column<TimeSpan>(type: "time", nullable: false)
+                    Timestamp = table.Column<TimeSpan>(type: "time", nullable: false),
+                    DurationInSeconds = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {

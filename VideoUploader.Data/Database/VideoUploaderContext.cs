@@ -1,25 +1,18 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Configuration;
 using VideoUploader.Models.Models;
 
 namespace VideoUploader.Data.Database;
 
-public class VideoUploaderContext : DbContext
+public class VideoUploaderContext(IConfiguration configuration, DbContextOptions options) : DbContext(options)
 {
     #region Properties
 
-    private readonly IConfiguration? _configuration;
+    private readonly IConfiguration? _configuration = configuration;
 
     #endregion
 
     #region Constructors
-
-    public VideoUploaderContext(IConfiguration configuration, DbContextOptions options) : base(options)
-    {
-        _configuration = configuration;
-    }
-
     #endregion
 
     #region DbSets

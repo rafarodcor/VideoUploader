@@ -1,4 +1,4 @@
-﻿using VideoUploader.Models.Models;
+﻿using VideoUploader.Models.DTOs;
 
 namespace VideoUploader.Services.MessageBus;
 

@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using VideoUploader.Consumer.Services;
 using VideoUploader.Data.Repositories;
+using VideoUploader.Models.DTOs;
 using VideoUploader.Models.Models;
 
 namespace VideoUploader.Consumer.MessageBus;
@@ -97,8 +98,9 @@ public class UploadVideoAnalysisConsumer : BackgroundService
                         var listQrCodeData = listTimestamps.Select(t => new QrCodeData
                         {
                             VideoAnalysisId = informationFile.Id,
-                            Timestamp = t.Timestamp.Value, // Assumindo que não será nulo se encontrado
-                            Content = t.QrCodeContent
+                            Timestamp = t.Timestamp,
+                            Content = t.Content,
+                            DurationInSeconds = t.DurationInSeconds
                         }).ToList();
 
                         await videoRepository.SaveListQrCodeData(listQrCodeData);

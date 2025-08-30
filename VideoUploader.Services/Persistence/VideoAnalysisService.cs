@@ -1,4 +1,5 @@
 ﻿using VideoUploader.Data.Repositories;
+using VideoUploader.Models.DTOs;
 using VideoUploader.Models.Models;
 using VideoUploader.Services.MessageBus;
 
@@ -43,9 +44,9 @@ public class VideoAnalysisService(
     public async Task SaveListQrCodeData(List<QrCodeData> listQrCodeData)
     {
         await _videoAnalysisRepository.SaveListQrCodeData(listQrCodeData);
-    }    
+    }
 
-    public async Task UploadVideoAsync(InformationFile informationFile)
+    public void UploadVideo(InformationFile informationFile)
     {
         _uploadVideoAnalysisProducer.Publish(informationFile);
     }

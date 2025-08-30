@@ -1,4 +1,5 @@
-﻿using VideoUploader.Models.Models;
+﻿using VideoUploader.Models.DTOs;
+using VideoUploader.Models.Models;
 
 namespace VideoUploader.Services.Persistence;
 
@@ -8,7 +9,7 @@ public interface IVideoAnalysisService
 
     Task<IEnumerable<QrCodeData>> GetQrCodeDataAsync(Guid id);
     Task<VideoAnalysis> GetAnalysisStatus(Guid id);
-    Task UploadVideoAsync(InformationFile informationFile);
+    void UploadVideo(InformationFile informationFile);
     Task SaveAnalysisStatus(VideoAnalysis videoAnalysis);
     Task UpdateAnalysisStatus(VideoAnalysis videoAnalysis);
     Task SaveListQrCodeData(List<QrCodeData> listQrCodeData);

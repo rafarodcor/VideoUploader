@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System.Text;
-using VideoUploader.Models.Models;
+using VideoUploader.Models.DTOs;
 
 namespace VideoUploader.Services.MessageBus;
 

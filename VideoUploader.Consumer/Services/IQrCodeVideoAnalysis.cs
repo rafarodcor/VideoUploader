@@ -1,10 +1,12 @@
-﻿namespace VideoUploader.Consumer.Services;
+﻿using VideoUploader.Models.DTOs;
+
+namespace VideoUploader.Consumer.Services;
 
 public interface IQrCodeVideoAnalysis
 {
     #region Methods
 
-    Task<List<(TimeSpan? Timestamp, string? QrCodeContent)>> FindQrCodeInVideoAsync(string videoPath);
+    Task<List<QrCodeResponse>> FindQrCodeInVideoAsync(string videoPath);
 
     #endregion
 }

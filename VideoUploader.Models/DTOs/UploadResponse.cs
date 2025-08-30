@@ -1,3 +1,3 @@
-﻿namespace VideoUploader.API.DTOs;
+﻿namespace VideoUploader.Models.DTOs;
 
 public record UploadResponse(Guid AnalysisId, string Message);

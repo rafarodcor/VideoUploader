@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using VideoUploader.API.DTOs;
+using VideoUploader.Models.DTOs;
 using VideoUploader.Models.Helpers;
 using VideoUploader.Models.Models;
 using VideoUploader.Services.Persistence;
@@ -95,7 +95,7 @@ public class VideoController(
             }
 
             // 5. Publicar a mensagem na fila para processamento assíncrono        
-            await _videoAnalysisService.UploadVideoAsync(new InformationFile(analysis.Id, analysis.OriginalFileName, videoPath));
+            _videoAnalysisService.UploadVideo(new InformationFile(analysis.Id, analysis.OriginalFileName, videoPath));
 
             _logger.LogInformation($"Análise {analysis.Id} enfileirada para processamento.");
 
@@ -155,7 +155,10 @@ public class VideoController(
             }
             else
             {
-                return Ok(listQrCodeData.Select(qr => new QrCodeResponse(qr.Timestamp, qr.Content)).ToList());                
+                return Ok(listQrCodeData
+                    .Select(qr => new QrCodeResponse(qr.Timestamp, qr.Content, qr.DurationInSeconds))
+                    .Select(response => response.ToString())
+                    .ToList());
             }
         }
         catch (Exception ex)

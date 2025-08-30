@@ -27,5 +27,10 @@ public class QrCodeData
     /// </summary>
     public TimeSpan Timestamp { get; set; }
 
+    /// <summary>
+    /// Por quantos segundos consecutivos o QR Code permaneceu visível.
+    /// </summary>
+    public int DurationInSeconds { get; set; }
+
     #endregion
 }
