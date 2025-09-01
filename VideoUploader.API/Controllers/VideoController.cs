@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using VideoUploader.Models.Configurations;
 using VideoUploader.Models.DTOs;
 using VideoUploader.Models.Helpers;
 using VideoUploader.Models.Models;
@@ -11,7 +12,8 @@ namespace VideoUploader.API.Controllers;
 [Route("v1/[controller]")]
 public class VideoController(
     ILogger<VideoController> logger,
-    IVideoAnalysisService videoAnalysisService,
+    IVideoAnalysisService videoAnalysisService,    
+    IVideoAnalysisMongoService videoAnalysisMongoService,
     IOptions<FileStorageSettings> fileStorageSettings) : ControllerBase
 {
     #region Constants
@@ -27,6 +29,7 @@ public class VideoController(
 
     private readonly ILogger<VideoController> _logger = logger;
     private readonly IVideoAnalysisService _videoAnalysisService = videoAnalysisService;
+    private readonly IVideoAnalysisMongoService _videoAnalysisMongoService = videoAnalysisMongoService;
     private readonly FileStorageSettings _fileStorageSettings = fileStorageSettings.Value;
 
     #endregion
@@ -87,6 +90,7 @@ public class VideoController(
             try
             {
                 await _videoAnalysisService.SaveAnalysisStatus(analysis);
+                await _videoAnalysisMongoService.CreateAsync(analysis);
             }
             catch (Exception ex)
             {
@@ -106,6 +110,8 @@ public class VideoController(
         // 7. Retorna 202 Accepted
         return Accepted(responses);
     }
+
+    #region SqlServer
 
     [HttpGet("/get-status/{id}")]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
@@ -168,6 +174,57 @@ public class VideoController(
         }
     }
 
+    #endregion
+
+    #region MongoDB
+
+    [HttpGet("/mongo/get-status/{id}")]
+    [ProducesResponseType(typeof(VideoAnalysis), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAnalysisStatusFromMongo(Guid id)
+    {
+        if (id == Guid.Empty)
+        {
+            return BadRequest("O ID fornecido é inválido.");
+        }
+
+        var analysis = await _videoAnalysisMongoService.GetAnalysisByIdAsync(id);
+
+        if (analysis == null)
+        {
+            return NotFound($"Análise com ID {id} não encontrada no MongoDB.");
+        }
+
+        return Ok($"Status da análise: {analysis.Status.GetDisplayNameEnum()}");
+    }
+
+    [HttpGet("/mongo/get-list-qrcode/{id}")]
+    [ProducesResponseType(typeof(List<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetQrCodeDataFromMongo(Guid id)
+    {
+        if (id == Guid.Empty)
+        {
+            return BadRequest("O ID fornecido é inválido.");
+        }
+
+        var analysis = await _videoAnalysisMongoService.GetAnalysisByIdAsync(id);
+
+        if (analysis == null || !analysis.QrCodes.Any())
+        {
+            return NotFound($"Nenhum dado de QR Code encontrado para a análise com ID {id} no MongoDB.");
+        }        
+
+        return Ok(analysis.QrCodes
+            .Select(qr => new QrCodeResponse(qr.Timestamp, qr.Content, qr.DurationInSeconds))
+            .Select(response => response.ToString())
+            .ToList());
+    }
+
+    #endregion
+
+    #region Private methods
+
     private bool IsFileExtensionValid(IFormFile file)
     {
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
@@ -177,6 +234,8 @@ public class VideoController(
         }
         return true;
     }
+
+    #endregion
 
     #endregion
 }

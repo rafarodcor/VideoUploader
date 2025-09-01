@@ -13,6 +13,6 @@ public interface IVideoAnalysisService
     Task SaveAnalysisStatus(VideoAnalysis videoAnalysis);
     Task UpdateAnalysisStatus(VideoAnalysis videoAnalysis);
     Task SaveListQrCodeData(List<QrCodeData> listQrCodeData);
-
+    
     #endregion
 }

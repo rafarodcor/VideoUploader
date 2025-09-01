@@ -7,12 +7,14 @@ namespace VideoUploader.Services.Persistence;
 
 public class VideoAnalysisService(
     IVideoAnalysisRepository videoAnalysisRepository,
-    IUploadVideoAnalysisProducer uploadVideoAnalysisProducer) : IVideoAnalysisService
+    IUploadVideoAnalysisProducer uploadVideoAnalysisProducer,
+    IVideoAnalysisMongoRepository videoAnalysisMongoRepository) : IVideoAnalysisService
 {
     #region Properties
 
     private readonly IVideoAnalysisRepository _videoAnalysisRepository = videoAnalysisRepository;
     private readonly IUploadVideoAnalysisProducer _uploadVideoAnalysisProducer = uploadVideoAnalysisProducer;
+    private readonly IVideoAnalysisMongoRepository _videoAnalysisMongoRepository = videoAnalysisMongoRepository;
 
     #endregion
 
@@ -50,6 +52,6 @@ public class VideoAnalysisService(
     {
         _uploadVideoAnalysisProducer.Publish(informationFile);
     }
-
+       
     #endregion
 }

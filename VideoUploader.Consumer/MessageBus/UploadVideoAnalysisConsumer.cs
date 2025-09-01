@@ -70,6 +70,7 @@ public class UploadVideoAnalysisConsumer : BackgroundService
                 _logger.LogInformation("Iniciando processamento para a análise: {AnalysisId}", informationFile.Id);
 
                 var videoRepository = scope.ServiceProvider.GetRequiredService<IVideoAnalysisRepository>();
+                var mongoRepository = scope.ServiceProvider.GetRequiredService<IVideoAnalysisMongoRepository>();
                 var qrCodeAnalysisService = scope.ServiceProvider.GetRequiredService<IQrCodeVideoAnalysis>();
 
                 VideoAnalysis? videoAnalysis = null;
@@ -88,27 +89,32 @@ public class UploadVideoAnalysisConsumer : BackgroundService
                     // 1. Atualiza o status para "Processando"
                     videoAnalysis.Status = Enums.ProcessingStatus.Processing;
                     await videoRepository.UpdateAnalysisStatus(videoAnalysis);
+                    await mongoRepository.UpdateAsync(videoAnalysis);
 
                     // 2. Faz a análise do vídeo
-                    var listTimestamps = await qrCodeAnalysisService.FindQrCodeInVideoAsync(videoPath);
+                    var listQrCodeResponses = await qrCodeAnalysisService.FindQrCodeInVideoAsync(videoPath);
 
                     // 3. Salva os resultados
-                    if (listTimestamps.Count > 0)
+                    if (listQrCodeResponses.Count > 0)
                     {
-                        var listQrCodeData = listTimestamps.Select(t => new QrCodeData
+                        var listQrCodeData = listQrCodeResponses.Select(t => new QrCodeData
                         {
                             VideoAnalysisId = informationFile.Id,
                             Timestamp = t.Timestamp,
                             Content = t.Content,
                             DurationInSeconds = t.DurationInSeconds
                         }).ToList();
-
+                        
                         await videoRepository.SaveListQrCodeData(listQrCodeData);
+
+                        // Adiciona os QrCodes à lista aninhada do objeto principal para o Mongo
+                        videoAnalysis.QrCodes.AddRange(listQrCodeData);
                     }
 
                     // 4. Atualiza o status para "Concluído"
                     videoAnalysis.Status = Enums.ProcessingStatus.Completed;
                     await videoRepository.UpdateAnalysisStatus(videoAnalysis);
+                    await mongoRepository.UpdateAsync(videoAnalysis);
 
                     _logger.LogInformation("Processamento concluído com sucesso para a análise: {AnalysisId}", informationFile.Id);
                 }
@@ -121,6 +127,7 @@ public class UploadVideoAnalysisConsumer : BackgroundService
                         // 5. Atualiza o status para "Falhou"
                         videoAnalysis.Status = Enums.ProcessingStatus.Failed;
                         await videoRepository.UpdateAnalysisStatus(videoAnalysis);
+                        await mongoRepository.UpdateAsync(videoAnalysis);
                     }
                 }
                 finally

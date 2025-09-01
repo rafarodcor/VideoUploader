@@ -4,7 +4,7 @@ using VideoUploader.Consumer.MessageBus;
 using VideoUploader.Consumer.Services;
 using VideoUploader.Data.Database;
 using VideoUploader.Data.Repositories;
-using VideoUploader.Models.Models;
+using VideoUploader.Models.Configurations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,12 +33,14 @@ builder.Services.AddDbContext<VideoUploaderContext>();
 
 // Configuration
 builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorageSettings"));
+builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDbSettings"));
 
-//Services
+// Services
 builder.Services.AddTransient<IQrCodeVideoAnalysis, QrCodeVideoAnalysis>();
 
 // Repository
 builder.Services.AddTransient<IVideoAnalysisRepository, VideoAnalysisRepository>();
+builder.Services.AddTransient<IVideoAnalysisMongoRepository, VideoAnalysisMongoRepository>();
 
 // Message Bus
 builder.Services.AddSingleton<RabbitMQConnectionManager>();

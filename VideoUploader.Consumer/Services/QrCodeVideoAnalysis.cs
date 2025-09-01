@@ -1,8 +1,8 @@
 ﻿using FFMpegCore;
 using Microsoft.Extensions.Options;
 using System.Drawing;
+using VideoUploader.Models.Configurations;
 using VideoUploader.Models.DTOs;
-using VideoUploader.Models.Models;
 using ZXing.Windows.Compatibility;
 
 namespace VideoUploader.Consumer.Services;

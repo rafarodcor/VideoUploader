@@ -1,4 +1,7 @@
-﻿namespace VideoUploader.Models.Models;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+namespace VideoUploader.Models.Models;
 
 /// <summary>
 /// Armazena os dados do QR Code encontrado no vídeo.
@@ -10,11 +13,14 @@ public class QrCodeData
     /// <summary>
     /// Identificador único do QR Code
     /// </summary>    
+    [BsonId]
+    [BsonRepresentation(BsonType.String)]
     public Guid Id { get; set; }
 
     /// <summary>
     /// Id do VideoAnalysis ao qual este QR Code pertence
     /// </summary>
+    [BsonRepresentation(BsonType.String)]
     public Guid VideoAnalysisId { get; set; }
 
     /// <summary>

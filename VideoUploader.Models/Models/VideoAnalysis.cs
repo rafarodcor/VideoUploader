@@ -1,4 +1,7 @@
-﻿namespace VideoUploader.Models.Models;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+namespace VideoUploader.Models.Models;
 
 /// <summary>
 /// Entidade principal que representa uma análise de vídeo.
@@ -10,6 +13,8 @@ public class VideoAnalysis
     /// <summary>
     /// Identificador único para cada solicitação de análise.
     /// </summary>
+    [BsonId]
+    [BsonRepresentation(BsonType.String)]
     public Guid Id { get; set; }
 
     /// <summary>
@@ -31,6 +36,12 @@ public class VideoAnalysis
     /// Data e hora em que a análise foi solicitada.
     /// </summary>
     public DateTime SubmittedAt { get; set; } = DateTime.Now;
+
+    /// <summary>
+    /// Lista dos dados de QR Code encontrados, aninhados neste documento.
+    /// Uso exclusivo do MongoDB
+    /// </summary>
+    public List<QrCodeData> QrCodes { get; set; } = [];
 
     #endregion
 }

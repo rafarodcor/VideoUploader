@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using System.Text;
 using VideoUploader.API.Controllers;
+using VideoUploader.Models.Configurations;
 using VideoUploader.Models.DTOs;
 using VideoUploader.Models.Models;
 using VideoUploader.Services.Persistence;
@@ -17,6 +18,7 @@ public class VideoControllerTests
 
     private readonly Mock<ILogger<VideoController>> _mockLogger;
     private readonly Mock<IVideoAnalysisService> _mockVideoAnalysisService;
+    private readonly Mock<IVideoAnalysisMongoService> _mockVideoAnalysisMongoService;
     private readonly Mock<IOptions<FileStorageSettings>> _mockFileStorageSettings;
     private readonly VideoController _controller;
 
@@ -28,6 +30,7 @@ public class VideoControllerTests
     {
         _mockLogger = new Mock<ILogger<VideoController>>();
         _mockVideoAnalysisService = new Mock<IVideoAnalysisService>();
+        _mockVideoAnalysisMongoService = new Mock<IVideoAnalysisMongoService>();
         _mockFileStorageSettings = new Mock<IOptions<FileStorageSettings>>();
 
         var settings = new FileStorageSettings { VideoPath = "TestFiles" };
@@ -36,6 +39,7 @@ public class VideoControllerTests
         _controller = new VideoController(
             _mockLogger.Object,
             _mockVideoAnalysisService.Object,
+            _mockVideoAnalysisMongoService.Object,
             _mockFileStorageSettings.Object);
     }
 

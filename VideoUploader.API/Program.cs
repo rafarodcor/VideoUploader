@@ -2,7 +2,7 @@ using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using VideoUploader.Data.Database;
 using VideoUploader.Data.Repositories;
-using VideoUploader.Models.Models;
+using VideoUploader.Models.Configurations;
 using VideoUploader.Services.MessageBus;
 using VideoUploader.Services.Persistence;
 
@@ -33,12 +33,15 @@ builder.Services.AddDbContext<VideoUploaderContext>();
 
 // Configuration
 builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorageSettings"));
+builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDbSettings"));
 
 // Services
 builder.Services.AddTransient<IVideoAnalysisService, VideoAnalysisService>();
+builder.Services.AddTransient<IVideoAnalysisMongoService, VideoAnalysisMongoService>();
 
 // Repository
 builder.Services.AddTransient<IVideoAnalysisRepository, VideoAnalysisRepository>();
+builder.Services.AddTransient<IVideoAnalysisMongoRepository, VideoAnalysisMongoRepository>();
 
 // Message Bus
 builder.Services.AddScoped<IMessageBus, MessageBus>();
