@@ -11,6 +11,8 @@ Hackaton - FIAP - Módulo 5
 - Moq
 - MongoDB
 - MongoExpress
+- Redis
+- SignalR
 
 Url Github
 https://github.com/rafarodcor/VideoUploader

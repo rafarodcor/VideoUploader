@@ -57,7 +57,7 @@ public class QrCodeVideoAnalysis(
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Falha ao processar o frame no timestamp {Timestamp} do vídeo {VideoPath}. Continuando a análise.", currentTime, videoPath);
+                _logger.LogWarning(ex, $"Falha ao processar o frame no timestamp {currentTime} do vídeo {videoPath}. Continuando a análise.");
             }
             finally
             {
@@ -101,12 +101,6 @@ public class QrCodeVideoAnalysis(
 
         return results;
     }
-
-    //public async Task SaveImageFrameVideo()
-    //{
-    //    // Salva um frame do vídeo no tempo 00:01:30
-    //    FFMpeg.Snapshot("caminho/para/seu_video.mp4", "caminho/para/thumbnail.png", new Size(640, 360), TimeSpan.FromMinutes(1.5));
-    //}
-
+    
     #endregion
 }

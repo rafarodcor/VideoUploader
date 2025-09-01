@@ -1,5 +1,7 @@
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using VideoUploader.API.Hubs;
+using VideoUploader.API.Services;
 using VideoUploader.Data.Database;
 using VideoUploader.Data.Repositories;
 using VideoUploader.Models.Configurations;
@@ -26,7 +28,7 @@ builder.Services.AddHealthChecks()
 
 #region Dependency Injection
 
-// Add services to the container.
+// Add services to the container
 
 // Context
 builder.Services.AddDbContext<VideoUploaderContext>();
@@ -46,6 +48,18 @@ builder.Services.AddTransient<IVideoAnalysisMongoRepository, VideoAnalysisMongoR
 // Message Bus
 builder.Services.AddScoped<IMessageBus, MessageBus>();
 builder.Services.AddScoped<IUploadVideoAnalysisProducer, UploadVideoAnalysisProducer>();
+builder.Services.AddHostedService<RedisNotificationListener>();
+
+#endregion
+
+#region SignalR
+
+var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");
+builder.Services.AddSignalR()
+    .AddStackExchangeRedis(redisConnectionString, options =>
+    {
+        options.Configuration.ChannelPrefix = "VideoUploader";
+    });
 
 #endregion
 
@@ -61,6 +75,10 @@ app.UseSwagger();
 
 app.UseSwaggerUI();
 
+app.UseDefaultFiles();
+
+app.UseStaticFiles();
+
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
@@ -72,5 +90,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     Predicate = _ => true,
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
+
+app.MapHub<NotificationHub>("/notificationHub");
 
 app.Run();

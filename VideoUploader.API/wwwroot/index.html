@@ -1,0 +1,41 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Notificações de Análise de Vídeo</title>
+</head>
+<body>
+    <h1>Status das Análises</h1>
+    <ul id="notificationsList"></ul>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/notificationHub")
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        async function start() {
+            try {
+                await connection.start();
+                console.log("SignalR Conectado.");
+            } catch (err) {
+                console.error(err);
+                setTimeout(start, 5000);
+            }
+        };
+
+        connection.onclose(async () => {
+            await start();
+        });
+
+        connection.on("ReceiveAnalysisUpdate", (analysisId, status) => {
+            const li = document.createElement("li");
+            li.textContent = `Análise ${analysisId} foi atualizada para o status: ${status}`;
+            document.getElementById("notificationsList").appendChild(li);
+        });
+
+        start();
+    </script>
+</body>
+</html>

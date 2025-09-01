@@ -5,6 +5,7 @@ using System.Text.Json;
 using VideoUploader.Consumer.Services;
 using VideoUploader.Data.Repositories;
 using VideoUploader.Models.DTOs;
+using VideoUploader.Models.Helpers;
 using VideoUploader.Models.Models;
 
 namespace VideoUploader.Consumer.MessageBus;
@@ -67,11 +68,12 @@ public class UploadVideoAnalysisConsumer : BackgroundService
             {
                 var videoPath = informationFile.Path;
 
-                _logger.LogInformation("Iniciando processamento para a análise: {AnalysisId}", informationFile.Id);
+                _logger.LogInformation($"Iniciando processamento para a análise: {informationFile.Id}");
 
                 var videoRepository = scope.ServiceProvider.GetRequiredService<IVideoAnalysisRepository>();
                 var mongoRepository = scope.ServiceProvider.GetRequiredService<IVideoAnalysisMongoRepository>();
                 var qrCodeAnalysisService = scope.ServiceProvider.GetRequiredService<IQrCodeVideoAnalysis>();
+                var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
                 VideoAnalysis? videoAnalysis = null;
 
@@ -81,8 +83,8 @@ public class UploadVideoAnalysisConsumer : BackgroundService
 
                     if (videoAnalysis == null)
                     {
-                        _logger.LogError("Análise de vídeo com ID {AnalysisId} não encontrada no banco de dados.", informationFile.Id);
-                        _channel.BasicAck(eventArgs.DeliveryTag, false); // Remove a mensagem "morta"
+                        _logger.LogError($"Análise de vídeo com ID {informationFile.Id} não encontrada no banco de dados.");
+                        _channel.BasicAck(eventArgs.DeliveryTag, false);
                         return;
                     }
 
@@ -90,6 +92,8 @@ public class UploadVideoAnalysisConsumer : BackgroundService
                     videoAnalysis.Status = Enums.ProcessingStatus.Processing;
                     await videoRepository.UpdateAnalysisStatus(videoAnalysis);
                     await mongoRepository.UpdateAsync(videoAnalysis);
+
+                    await notificationService.NotifyAnalysisUpdate(videoAnalysis.Id, videoAnalysis.Status.GetDisplayNameEnum());
 
                     // 2. Faz a análise do vídeo
                     var listQrCodeResponses = await qrCodeAnalysisService.FindQrCodeInVideoAsync(videoPath);
@@ -104,7 +108,7 @@ public class UploadVideoAnalysisConsumer : BackgroundService
                             Content = t.Content,
                             DurationInSeconds = t.DurationInSeconds
                         }).ToList();
-                        
+
                         await videoRepository.SaveListQrCodeData(listQrCodeData);
 
                         // Adiciona os QrCodes à lista aninhada do objeto principal para o Mongo
@@ -116,11 +120,13 @@ public class UploadVideoAnalysisConsumer : BackgroundService
                     await videoRepository.UpdateAnalysisStatus(videoAnalysis);
                     await mongoRepository.UpdateAsync(videoAnalysis);
 
-                    _logger.LogInformation("Processamento concluído com sucesso para a análise: {AnalysisId}", informationFile.Id);
+                    await notificationService.NotifyAnalysisUpdate(videoAnalysis.Id, videoAnalysis.Status.GetDisplayNameEnum());
+
+                    _logger.LogInformation($"Processamento concluído com sucesso para a análise: {informationFile.Id}");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Falha crítica ao processar a análise: {AnalysisId}", informationFile.Id);
+                    _logger.LogError(ex, $"Falha crítica ao processar a análise: {informationFile.Id}");
 
                     if (videoAnalysis != null)
                     {
@@ -128,6 +134,8 @@ public class UploadVideoAnalysisConsumer : BackgroundService
                         videoAnalysis.Status = Enums.ProcessingStatus.Failed;
                         await videoRepository.UpdateAnalysisStatus(videoAnalysis);
                         await mongoRepository.UpdateAsync(videoAnalysis);
+
+                        await notificationService.NotifyAnalysisUpdate(videoAnalysis.Id, videoAnalysis.Status.GetDisplayNameEnum());
                     }
                 }
                 finally
@@ -141,7 +149,7 @@ public class UploadVideoAnalysisConsumer : BackgroundService
                     // 6. Confirma a mensagem (ACK) em TODOS os casos (sucesso ou falha tratada)                    
                     _channel.BasicAck(eventArgs.DeliveryTag, false);
                 }
-            }                        
+            }
         };
 
         _channel.BasicConsume(QUEUE_NAME, false, consumer);

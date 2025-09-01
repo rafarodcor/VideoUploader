@@ -37,6 +37,7 @@ builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("Mo
 
 // Services
 builder.Services.AddTransient<IQrCodeVideoAnalysis, QrCodeVideoAnalysis>();
+builder.Services.AddSingleton<INotificationService, RedisNotificationService>();
 
 // Repository
 builder.Services.AddTransient<IVideoAnalysisRepository, VideoAnalysisRepository>();
