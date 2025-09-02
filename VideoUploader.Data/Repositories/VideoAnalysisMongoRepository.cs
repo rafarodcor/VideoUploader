@@ -41,5 +41,15 @@ public class VideoAnalysisMongoRepository : IVideoAnalysisMongoRepository
         await _videoAnalysesCollection.ReplaceOneAsync(x => x.Id == analysis.Id, analysis);
     }
 
+    public async Task<List<VideoAnalysis>> GetAllAsync()
+    {
+        return await _videoAnalysesCollection.Find(_ => true).ToListAsync();
+    }
+
+    public async Task DeleteAllAsync()
+    {
+        await _videoAnalysesCollection.DeleteManyAsync(_ => true);
+    }
+
     #endregion
 }

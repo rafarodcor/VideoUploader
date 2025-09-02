@@ -44,5 +44,16 @@ public class VideoAnalysisRepository(VideoUploaderContext context) : IVideoAnaly
         await _context.BulkInsertAsync(listQrCodeData);
     }
 
+    public async Task<IEnumerable<VideoAnalysis>> GetAllAsync()
+    {
+        return await _context.VideoAnalyses.AsNoTracking().ToListAsync();
+    }
+
+    public async Task DeleteAllAsync()
+    {
+        await _context.Database.ExecuteSqlRawAsync("DELETE FROM QrCodeDatas");
+        await _context.Database.ExecuteSqlRawAsync("DELETE FROM VideoAnalyses");
+    }
+
     #endregion
 }

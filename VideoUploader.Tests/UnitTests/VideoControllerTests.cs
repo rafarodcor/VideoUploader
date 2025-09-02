@@ -20,6 +20,7 @@ public class VideoControllerTests
     private readonly Mock<IVideoAnalysisService> _mockVideoAnalysisService;
     private readonly Mock<IVideoAnalysisMongoService> _mockVideoAnalysisMongoService;
     private readonly Mock<IOptions<FileStorageSettings>> _mockFileStorageSettings;
+    private readonly Mock<IOptions<UploadSettings>> _mockUploadSettings;
     private readonly VideoController _controller;
 
     #endregion
@@ -32,15 +33,20 @@ public class VideoControllerTests
         _mockVideoAnalysisService = new Mock<IVideoAnalysisService>();
         _mockVideoAnalysisMongoService = new Mock<IVideoAnalysisMongoService>();
         _mockFileStorageSettings = new Mock<IOptions<FileStorageSettings>>();
+        _mockUploadSettings = new Mock<IOptions<UploadSettings>>();
 
-        var settings = new FileStorageSettings { VideoPath = "TestFiles" };
-        _mockFileStorageSettings.Setup(s => s.Value).Returns(settings);
+        var settingsFileStorageSettings = new FileStorageSettings { VideoPath = "TestFiles" };
+        _mockFileStorageSettings.Setup(s => s.Value).Returns(settingsFileStorageSettings);
+
+        var settingsUploadSettings = new UploadSettings { AllowedExtensions = [".mp4", ".avi", ".mkv"] };
+        _mockUploadSettings.Setup(s => s.Value).Returns(settingsUploadSettings);
 
         _controller = new VideoController(
             _mockLogger.Object,
             _mockVideoAnalysisService.Object,
             _mockVideoAnalysisMongoService.Object,
-            _mockFileStorageSettings.Object);
+            _mockFileStorageSettings.Object,
+            _mockUploadSettings.Object);
     }
 
     #endregion
@@ -53,7 +59,7 @@ public class VideoControllerTests
     {
         // Arrange
         var fileName = "document.pdf";
-        var validExtensions = new[] { ".mp4", ".avi", ".mkv" };
+        var validExtensions =  new[] { ".mp4", ".avi", ".mkv" };
 
         // Act
         var isValid = ValidateFileType(fileName, validExtensions);

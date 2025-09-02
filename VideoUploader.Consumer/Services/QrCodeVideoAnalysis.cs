@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using System.Drawing;
 using VideoUploader.Models.Configurations;
 using VideoUploader.Models.DTOs;
+using ZXing;
 using ZXing.Windows.Compatibility;
 
 namespace VideoUploader.Consumer.Services;
@@ -23,11 +24,21 @@ public class QrCodeVideoAnalysis(
 
     #region Methods
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validar a compatibilidade da plataforma", Justification = "<Pendente>")]
     public async Task<List<QrCodeResponse>> FindQrCodeInVideoAsync(string videoPath)
-    {
-        // Passo 1: Obter a duração total do vídeo para saber até onde iterar
-        var reader = new BarcodeReader();
+    {        
+        var reader = new BarcodeReader
+        {
+            AutoRotate = true,
+            Options = new ZXing.Common.DecodingOptions
+            {                
+                PossibleFormats = [BarcodeFormat.QR_CODE],
+                TryHarder = false
+            }
+        };
         var mediaInfo = await FFProbe.AnalyseAsync(videoPath);
+
+        // Passo 1: Obter a duração total do vídeo para saber até onde iterar
         var duration = mediaInfo.Duration;
 
         Directory.CreateDirectory(_fileStorageSettings.VideoPath);
@@ -49,10 +60,13 @@ public class QrCodeVideoAnalysis(
 
                 // Passo 4: Tenta ler a imagem com ZXing.Net                
                 using var bitmap = (Bitmap)Image.FromFile(tempImagePath);
-                var result = reader.Decode(bitmap);
-                if (result != null)
+                if (bitmap != null)
                 {
-                    currentFrameQrContent = result.Text;
+                    ZXing.Result? result = reader.Decode(bitmap);
+                    if (result != null)
+                    {
+                        currentFrameQrContent = result.Text;
+                    }
                 }
             }
             catch (Exception ex)
@@ -60,8 +74,7 @@ public class QrCodeVideoAnalysis(
                 _logger.LogWarning(ex, $"Falha ao processar o frame no timestamp {currentTime} do vídeo {videoPath}. Continuando a análise.");
             }
             finally
-            {
-                // Garante que o arquivo temporário seja deletado
+            {                
                 if (File.Exists(tempImagePath))
                 {
                     File.Delete(tempImagePath);
@@ -75,25 +88,25 @@ public class QrCodeVideoAnalysis(
             }
             else // Se for diferente (ou nulo)
             {
-                // 1. Se havia um QR Code anterior sendo rastreado, sua aparição acabou. Salve-o.
+                // Se havia um QR Code anterior sendo rastreado, sua aparição acabou. Salvar.
                 if (currentAppearance != null)
                 {
                     results.Add(currentAppearance);
                 }
 
-                // 2. Se um NOVO QR Code foi encontrado neste frame, comece a rastreá-lo.
+                // 2. Se um NOVO QR Code foi encontrado neste frame, começar a rastreá-lo.
                 if (currentFrameQrContent != null)
                 {
                     currentAppearance = new QrCodeResponse(currentTime, currentFrameQrContent, 1);
                 }
-                else // Se não há QR Code neste frame, resete o rastreamento.
+                else // Se não há QR Code neste frame, resetar o rastreamento.
                 {
                     currentAppearance = null;
                 }
             }
         }
 
-        // Após o loop, se ainda houver um QR Code sendo rastreado (que foi até o final do vídeo), salve-o.
+        // Após o loop, se ainda houver um QR Code sendo rastreado (que foi até o final do vídeo), salvar.
         if (currentAppearance != null)
         {
             results.Add(currentAppearance);
@@ -101,6 +114,6 @@ public class QrCodeVideoAnalysis(
 
         return results;
     }
-    
+
     #endregion
 }

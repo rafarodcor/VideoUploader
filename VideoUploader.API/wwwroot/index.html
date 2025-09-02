@@ -1,38 +1,92 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Notificações de Análise de Vídeo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .card-header {
+            font-size: 1.5rem;
+        }
+    </style>
 </head>
 <body>
-    <h1>Status das Análises</h1>
-    <ul id="notificationsList"></ul>
+    <div class="container mt-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                Status das Análises em Tempo Real
+            </div>
+            <div class="card-body">
+                <h5 class="card-title border-bottom pb-2 mb-3">
+                    Conexão SignalR: <span id="connectionStatus" class="badge bg-danger">Desconectado</span>
+                </h5>
+                <ul id="notificationsList" class="list-group list-group-flush">
+                    <li class="list-group-item text-muted">Aguardando notificações...</li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
     <script>
         const connection = new signalR.HubConnectionBuilder()
             .withUrl("/notificationHub")
             .configureLogging(signalR.LogLevel.Information)
             .build();
 
+        const statusSpan = document.getElementById("connectionStatus");
+        const notificationsList = document.getElementById("notificationsList");
+        let isFirstNotification = true;
+
         async function start() {
             try {
                 await connection.start();
                 console.log("SignalR Conectado.");
+                statusSpan.textContent = "Conectado";
+                statusSpan.classList.remove("bg-danger", "bg-warning");
+                statusSpan.classList.add("bg-success");
             } catch (err) {
                 console.error(err);
+                statusSpan.textContent = "Reconectando...";
+                statusSpan.classList.remove("bg-success", "bg-danger");
+                statusSpan.classList.add("bg-warning");
                 setTimeout(start, 5000);
             }
         };
 
         connection.onclose(async () => {
+            statusSpan.textContent = "Desconectado";
+            statusSpan.classList.remove("bg-success", "bg-warning");
+            statusSpan.classList.add("bg-danger");
             await start();
         });
 
         connection.on("ReceiveAnalysisUpdate", (analysisId, status) => {
+            if (isFirstNotification) {
+                notificationsList.innerHTML = '';
+                isFirstNotification = false;
+            }
+
             const li = document.createElement("li");
-            li.textContent = `Análise ${analysisId} foi atualizada para o status: ${status}`;
-            document.getElementById("notificationsList").appendChild(li);
+            li.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+
+            let statusBadgeClass = "bg-secondary";
+            if (status.toLowerCase() === "concluído") { statusBadgeClass = "bg-success"; }
+            if (status.toLowerCase() === "processando") { statusBadgeClass = "bg-info text-dark"; }
+            if (status.toLowerCase() === "falhou") { statusBadgeClass = "bg-danger"; }
+
+            const statusBadge = `<span class="badge ${statusBadgeClass}">${status}</span>`;
+
+            li.innerHTML = `Análise <strong>${analysisId}</strong> foi atualizada para o status: ${statusBadge}`;
+
+            notificationsList.prepend(li);
         });
 
         start();

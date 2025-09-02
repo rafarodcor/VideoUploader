@@ -13,6 +13,8 @@ public interface IVideoAnalysisService
     Task SaveAnalysisStatus(VideoAnalysis videoAnalysis);
     Task UpdateAnalysisStatus(VideoAnalysis videoAnalysis);
     Task SaveListQrCodeData(List<QrCodeData> listQrCodeData);
-    
+    Task<IEnumerable<VideoAnalysis>> GetAllAnalysesAsync();
+    Task DeleteAllAnalysesAsync();
+
     #endregion
 }

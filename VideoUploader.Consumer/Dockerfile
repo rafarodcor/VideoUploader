@@ -2,7 +2,11 @@
 
 # Esta fase é usada durante a execução no VS no modo rápido (Padrão para a configuração de Depuração)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+
+USER root
+RUN apt-get update && apt-get install -y libgdiplus
 USER app
+
 WORKDIR /app
 EXPOSE 8081
 

@@ -52,6 +52,16 @@ public class VideoAnalysisService(
     {
         _uploadVideoAnalysisProducer.Publish(informationFile);
     }
-       
+
+    public async Task<IEnumerable<VideoAnalysis>> GetAllAnalysesAsync()
+    {
+        return await _videoAnalysisRepository.GetAllAsync();
+    }
+
+    public async Task DeleteAllAnalysesAsync()
+    {
+        await _videoAnalysisRepository.DeleteAllAsync();
+    }
+
     #endregion
 }

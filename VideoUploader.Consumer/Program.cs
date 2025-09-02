@@ -6,6 +6,8 @@ using VideoUploader.Data.Database;
 using VideoUploader.Data.Repositories;
 using VideoUploader.Models.Configurations;
 
+#region Builder
+
 var builder = WebApplication.CreateBuilder(args);
 
 #region Health Checks
@@ -49,10 +51,19 @@ builder.Services.AddHostedService<UploadVideoAnalysisConsumer>();
 
 #endregion
 
-builder.Services.AddControllers();
+#region Swagger
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+#endregion
+
+builder.Services.AddControllers();
+
+#endregion
+
+#region App
 
 var app = builder.Build();
 
@@ -76,3 +87,5 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 });
 
 app.Run();
+
+#endregion

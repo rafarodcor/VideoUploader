@@ -9,6 +9,8 @@ public interface IVideoAnalysisMongoRepository
     Task CreateAsync(VideoAnalysis analysis);
     Task UpdateAsync(VideoAnalysis analysis);
     Task<VideoAnalysis?> GetByIdAsync(Guid id);
+    Task<List<VideoAnalysis>> GetAllAsync();
+    Task DeleteAllAsync();
 
     #endregion
 }

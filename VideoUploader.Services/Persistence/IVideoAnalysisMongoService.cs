@@ -8,6 +8,8 @@ public interface IVideoAnalysisMongoService
 
     Task CreateAsync(VideoAnalysis analysis);
     Task<VideoAnalysis?> GetAnalysisByIdAsync(Guid id);
+    Task<List<VideoAnalysis>> GetAllAnalysesAsync();
+    Task DeleteAllAnalysesAsync();
 
     #endregion
 }
