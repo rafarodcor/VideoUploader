@@ -13,6 +13,11 @@
         .card-header {
             font-size: 1.5rem;
         }
+
+        .status-badge {
+            min-width: 110px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -74,19 +79,27 @@
                 isFirstNotification = false;
             }
 
-            const li = document.createElement("li");
-            li.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+            let listItem = document.getElementById(`analysis-${analysisId}`);
 
+            // Se não existir, cria um novo
+            if (!listItem) {
+                listItem = document.createElement("li");
+                listItem.id = `analysis-${analysisId}`; // Atribui um ID único
+                listItem.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+                notificationsList.prepend(listItem); // Adiciona no topo da lista
+            }
+
+            // Define a cor do "badge" com base no status
             let statusBadgeClass = "bg-secondary";
             if (status.toLowerCase() === "concluído") { statusBadgeClass = "bg-success"; }
             if (status.toLowerCase() === "processando") { statusBadgeClass = "bg-info text-dark"; }
             if (status.toLowerCase() === "falhou") { statusBadgeClass = "bg-danger"; }
+            if (status.toLowerCase() === "na fila") { statusBadgeClass = "bg-secondary"; }
 
-            const statusBadge = `<span class="badge ${statusBadgeClass}">${status}</span>`;
+            const statusBadge = `<span class="badge ${statusBadgeClass} status-badge">${status}</span>`;
 
-            li.innerHTML = `Análise <strong>${analysisId}</strong> foi atualizada para o status: ${statusBadge}`;
-
-            notificationsList.prepend(li);
+            // Atualiza o conteúdo do item da lista
+            listItem.innerHTML = `Análise <strong>${analysisId}</strong> foi atualizada para o status: ${statusBadge}`;            
         });
 
         start();

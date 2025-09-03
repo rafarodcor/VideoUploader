@@ -1,5 +1,6 @@
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.DependencyInjection;
 using VideoUploader.Consumer.MessageBus;
 using VideoUploader.Consumer.Services;
 using VideoUploader.Data.Database;
@@ -17,12 +18,20 @@ var rabbitMqConnectionString = $"amqp://{builder.Configuration["RabbitMQConnecti
 builder.Services.AddHealthChecks()
     .AddSqlServer(
         connectionString: builder.Configuration.GetConnectionString("DefaultConnection"),
-        name: "Database",
+        name: "Database (SqlServer)",
         tags: ["core", "database"])
     .AddRabbitMQ(
         rabbitConnectionString: rabbitMqConnectionString,
         name: "RabbitMQ",
-        tags: ["core", "message-bus"]);
+        tags: ["core", "message-bus"])
+    .AddRedis(
+        redisConnectionString: builder.Configuration.GetConnectionString("RedisConnection"),
+        name: "Redis",
+        tags: ["core", "cache", "backplane"])
+    .AddMongoDb(
+        mongodbConnectionString: builder.Configuration["MongoDbSettings:ConnectionString"],
+        name: "Database (MongoDB)",
+        tags: ["core", "database", "nosql"]);
 
 #endregion
 

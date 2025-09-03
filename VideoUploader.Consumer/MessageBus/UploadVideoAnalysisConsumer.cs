@@ -88,11 +88,14 @@ public class UploadVideoAnalysisConsumer : BackgroundService
                         return;
                     }
 
+                    // Envia a notificação de vídeo 'Na Fila'
+                    await notificationService.NotifyAnalysisUpdate(videoAnalysis.Id, videoAnalysis.Status.GetDisplayNameEnum());
+
                     // 1. Atualiza o status para "Processando"
                     videoAnalysis.Status = Enums.ProcessingStatus.Processing;
                     await videoRepository.UpdateAnalysisStatus(videoAnalysis);
                     await mongoRepository.UpdateAsync(videoAnalysis);
-
+                                        
                     await notificationService.NotifyAnalysisUpdate(videoAnalysis.Id, videoAnalysis.Status.GetDisplayNameEnum());
 
                     // 2. Faz a análise do vídeo
