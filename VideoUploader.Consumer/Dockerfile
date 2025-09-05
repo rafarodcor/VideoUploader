@@ -3,13 +3,16 @@
 # Esta fase é usada durante a execução no VS no modo rápido (Padrão para a configuração de Depuração)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 
+WORKDIR /app
+
 USER root
-RUN apt-get update && apt-get install -y libgdiplus
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg
+
+RUN mkdir Files && chown -R app:app Files
 USER app
 
-WORKDIR /app
 EXPOSE 8081
-
 ENV ASPNETCORE_URLS=http://+:8081
 
 # Esta fase é usada para compilar o projeto de serviço
