@@ -4,11 +4,10 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 using System.Threading.RateLimiting;
-using VideoUploader.API.Hubs;
-using VideoUploader.API.Services;
 using VideoUploader.Data.Database;
 using VideoUploader.Data.Repositories;
 using VideoUploader.Models.Configurations;
+using VideoUploader.Services.Hubs;
 using VideoUploader.Services.MessageBus;
 using VideoUploader.Services.Persistence;
 

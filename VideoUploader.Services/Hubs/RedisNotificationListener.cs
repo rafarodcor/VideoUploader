@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using System.Text.Json;
-using VideoUploader.API.Hubs;
 
-namespace VideoUploader.API.Services;
+namespace VideoUploader.Services.Hubs;
 
 public class RedisNotificationListener : BackgroundService
 {

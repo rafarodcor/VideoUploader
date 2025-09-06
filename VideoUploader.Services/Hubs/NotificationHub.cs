@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 
-namespace VideoUploader.API.Hubs;
+namespace VideoUploader.Services.Hubs;
 
 public class NotificationHub : Hub { }
