@@ -1,6 +1,6 @@
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Driver;
 using VideoUploader.Consumer.MessageBus;
 using VideoUploader.Consumer.Services;
 using VideoUploader.Data.Database;
@@ -19,7 +19,7 @@ builder.Services.AddHealthChecks()
     .AddSqlServer(
         connectionString: builder.Configuration.GetConnectionString("DefaultConnection"),
         name: "Database (SqlServer)",
-        tags: ["core", "database"])
+        tags: ["core", "database", "sql"])
     .AddRabbitMQ(
         rabbitConnectionString: rabbitMqConnectionString,
         name: "RabbitMQ",
@@ -29,7 +29,7 @@ builder.Services.AddHealthChecks()
         name: "Redis",
         tags: ["core", "cache", "backplane"])
     .AddMongoDb(
-        mongodbConnectionString: builder.Configuration["MongoDbSettings:ConnectionString"],
+        clientFactory: sp => sp.GetRequiredService<IMongoClient>(),
         name: "Database (MongoDB)",
         tags: ["core", "database", "nosql"]);
 
@@ -41,6 +41,7 @@ builder.Services.AddHealthChecks()
 
 // Context
 builder.Services.AddDbContext<VideoUploaderContext>();
+builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(builder.Configuration["MongoDbSettings:ConnectionString"]));
 
 // Configuration
 builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorageSettings"));

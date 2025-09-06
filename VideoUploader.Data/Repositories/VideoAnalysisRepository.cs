@@ -46,7 +46,22 @@ public class VideoAnalysisRepository(VideoUploaderContext context) : IVideoAnaly
 
     public async Task<IEnumerable<VideoAnalysis>> GetAllAsync()
     {
-        return await _context.VideoAnalyses.AsNoTracking().ToListAsync();
+        return await _context.VideoAnalyses
+        .AsNoTracking()
+        .GroupJoin(
+            _context.QrCodeDatas.AsNoTracking(),
+            video => video.Id,
+            qr => qr.VideoAnalysisId,
+            (video, qrs) => new VideoAnalysis
+            {
+                Id = video.Id,
+                OriginalFileName = video.OriginalFileName,
+                Extension = video.Extension,
+                Status = video.Status,
+                SubmittedAt = video.SubmittedAt,
+                QrCodes = qrs.ToList()
+            })
+        .ToListAsync();
     }
 
     public async Task DeleteAllAsync()
